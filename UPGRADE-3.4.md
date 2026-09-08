@@ -20,13 +20,18 @@
    the logger, and records the two Mollie failures it used to swallow: a tracked session it cannot
    read, and a superseded session it cannot cancel.
 
+   Both arguments are optional, so a service definition written for 3.3 keeps building. **Not passing
+   them is deprecated and they will be required in 4.0.** Until then the action falls back to
+   `ExistingMollieSessionResolver`, which is what the plugin injects anyway and holds no state, so
+   the behaviour is the same; without the logger the two failures above go unrecorded again.
+
    ```diff
     public function __construct(
         private OrderRepositoryInterface $orderRepository,
         private MollieApiClientKeyResolverInterface $apiClientKeyResolver,
         private PaymentRepositoryInterface $paymentRepository,
-   +    private ExistingMollieSessionResolverInterface $existingSessionResolver,
-   +    private MollieLoggerActionInterface $loggerAction,
+   +    private ?ExistingMollieSessionResolverInterface $existingSessionResolver = null,
+   +    private ?MollieLoggerActionInterface $loggerAction = null,
     ) {
    ```
 

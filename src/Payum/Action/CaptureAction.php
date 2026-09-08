@@ -41,6 +41,7 @@ use Sylius\MolliePlugin\Payum\Request\Subscription\CreateInternalRecurring;
 use Sylius\MolliePlugin\Payum\Request\Subscription\CreateOnDemandSubscription;
 use Sylius\MolliePlugin\Payum\Request\Subscription\CreateOnDemandSubscriptionPayment;
 use Sylius\MolliePlugin\Payum\Resolver\ExistingMollieSessionDecision;
+use Sylius\MolliePlugin\Payum\Resolver\ExistingMollieSessionResolver;
 use Sylius\MolliePlugin\Payum\Resolver\ExistingMollieSessionResolverInterface;
 use Sylius\MolliePlugin\Resolver\MollieApiClientKeyResolverInterface;
 
@@ -60,9 +61,28 @@ final class CaptureAction extends BaseApiAwareAction implements GenericTokenFact
         private OrderRepositoryInterface $orderRepository,
         private MollieApiClientKeyResolverInterface $apiClientKeyResolver,
         private PaymentRepositoryInterface $paymentRepository,
-        private ExistingMollieSessionResolverInterface $existingSessionResolver,
-        private MollieLoggerActionInterface $loggerAction,
+        private ?ExistingMollieSessionResolverInterface $existingSessionResolver = null,
+        private ?MollieLoggerActionInterface $loggerAction = null,
     ) {
+        if (null === $this->existingSessionResolver) {
+            trigger_deprecation(
+                'sylius/mollie-plugin',
+                '3.4',
+                'Not passing ExistingMollieSessionResolverInterface to %s is deprecated and will be required in 4.0. ' .
+                'Until then the bundled resolver is used, which is what the plugin injects anyway.',
+                self::class,
+            );
+        }
+
+        if (null === $this->loggerAction) {
+            trigger_deprecation(
+                'sylius/mollie-plugin',
+                '3.4',
+                'Not passing MollieLoggerActionInterface to %s is deprecated and will be required in 4.0. ' .
+                'Without it a Mollie session that cannot be read or cancelled is handled silently.',
+                self::class,
+            );
+        }
     }
 
     public function setGenericTokenFactory(?GenericTokenFactoryInterface $genericTokenFactory = null): void
@@ -179,7 +199,7 @@ final class CaptureAction extends BaseApiAwareAction implements GenericTokenFact
                 ? $this->mollieApiClient->payments->get($paymentMollieId)
                 : $this->mollieApiClient->orders->get($orderMollieId, ['embed' => 'payments']);
         } catch (\Exception $e) {
-            $this->loggerAction->addNegativeLog(sprintf(
+            $this->loggerAction?->addNegativeLog(sprintf(
                 'Could not read the tracked Mollie session %s, leaving the payment to the status flow: %s',
                 $paymentMollieId ?? $orderMollieId,
                 $e->getMessage(),
@@ -188,7 +208,8 @@ final class CaptureAction extends BaseApiAwareAction implements GenericTokenFact
             return true;
         }
 
-        $decision = $this->existingSessionResolver->resolve($mollieResource, $details, $request->getToken());
+        $resolver = $this->existingSessionResolver ?? new ExistingMollieSessionResolver();
+        $decision = $resolver->resolve($mollieResource, $details, $request->getToken());
 
         if (ExistingMollieSessionDecision::LeaveToStatusFlow === $decision) {
             return true;
@@ -202,7 +223,7 @@ final class CaptureAction extends BaseApiAwareAction implements GenericTokenFact
             try {
                 $this->cancelMollieResource($mollieResource);
             } catch (\Exception $e) {
-                $this->loggerAction->addNegativeLog(sprintf(
+                $this->loggerAction?->addNegativeLog(sprintf(
                     'Could not cancel the superseded Mollie session %s, it stays payable until it expires: %s',
                     $mollieResource->id,
                     $e->getMessage(),

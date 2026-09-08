@@ -479,6 +479,35 @@ final class CaptureActionTest extends TestCase
         $this->captureAction->execute($request);
     }
 
+    public function testItStillRecognisesAReturnFromMollieWhenBuiltWithoutTheSessionResolver(): void
+    {
+        $captureAction = new CaptureAction(
+            $this->orderRepository,
+            $this->apiClientKeyResolver,
+            $this->paymentRepository,
+        );
+        $captureAction->setApi($this->mollieApiClient);
+        $captureAction->setGateway($this->gateway);
+
+        $paymentEndpoint = $this->createMock(PaymentEndpoint::class);
+
+        $openMolliePayment = new Payment($this->mollieApiClient);
+        $openMolliePayment->id = 'tr_open';
+        $openMolliePayment->status = PaymentStatus::STATUS_OPEN;
+        $openMolliePayment->redirectUrl = 'https://shop.test/payment/capture/token-a';
+
+        $this->mollieApiClient->payments = $paymentEndpoint;
+        $paymentEndpoint->method('get')->with('tr_open')->willReturn($openMolliePayment);
+        $paymentEndpoint->expects($this->never())->method('create');
+
+        $details = new ArrayObject(['payment_mollie_id' => 'tr_open']);
+        $request = $this->createCaptureRequestFor($details, 'https://shop.test/payment/capture/token-a');
+
+        $this->gateway->expects($this->never())->method('execute');
+
+        $captureAction->execute($request);
+    }
+
     public function testItResumesTheExistingSessionWhenTheMethodDidNotChange(): void
     {
         $paymentEndpoint = $this->createMock(PaymentEndpoint::class);
