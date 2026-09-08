@@ -42,6 +42,25 @@ final class PaymentFeeAdjustmentClearerTest extends TestCase
         $this->assertSame($types, $removed);
     }
 
+    public function testItRemovesTheBuiltInTypesWhenBuiltWithoutTheProvider(): void
+    {
+        $removed = [];
+        $order = $this->createMock(OrderInterface::class);
+        $order->method('removeAdjustments')->willReturnCallback(
+            function (?string $type = null) use (&$removed): void {
+                $removed[] = $type;
+            },
+        );
+
+        (new PaymentFeeAdjustmentClearer())->clear($order);
+
+        $this->assertSame([
+            AdjustmentInterface::FIXED_AMOUNT_ADJUSTMENT,
+            AdjustmentInterface::PERCENTAGE_ADJUSTMENT,
+            AdjustmentInterface::PERCENTAGE_AND_AMOUNT_ADJUSTMENT,
+        ], $removed);
+    }
+
     public function testItRemovesACustomTypeAddedToTheProvider(): void
     {
         $removed = [];

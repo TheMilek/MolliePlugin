@@ -105,9 +105,13 @@
    three built in types. Redefine it to have your own surcharge adjustments cleared and compared
    along with them.
 
+   The argument is optional, so a service definition written for 3.3 keeps building. **Not passing it
+   is deprecated and it will be required in 4.0**, and a clearer built without it removes the three
+   built in types exactly as 3.3 did, which means a surcharge adjustment of your own is left behind.
+
    ```diff
    +public function __construct(
-   +    private readonly PaymentSurchargeAdjustmentsProviderInterface $surchargeAdjustmentsProvider,
+   +    private readonly ?PaymentSurchargeAdjustmentsProviderInterface $surchargeAdjustmentsProvider = null,
    +) {
    +}
    +
@@ -117,14 +121,14 @@
    `PaymentFeeCalculateAction::PAYMENTS_FEE_METHOD` still holds the same three types and still
    works, but the provider is what the plugin now reads.
 
-9. `Sylius\MolliePlugin\Uploader\PaymentMethodLogoUploader` no longer depends on `Gaufrette\Filesystem`.
-   It is now constructed with `Sylius\Component\Core\Filesystem\Adapter\FilesystemAdapterInterface`
-   (backed by Flysystem, resolved to the same `sylius.adapter.filesystem.default` storage already
-   used by Sylius core for images), and the `sylius_mollie.uploader.payment_method_logo` service
-   definition has been updated accordingly. This removes the plugin's dependency on
-   `knplabs/knp-gaufrette-bundle`, which Sylius core is dropping.
+10. `Sylius\MolliePlugin\Uploader\PaymentMethodLogoUploader` no longer depends on `Gaufrette\Filesystem`.
+    It is now constructed with `Sylius\Component\Core\Filesystem\Adapter\FilesystemAdapterInterface`
+    (backed by Flysystem, resolved to the same `sylius.adapter.filesystem.default` storage already
+    used by Sylius core for images), and the `sylius_mollie.uploader.payment_method_logo` service
+    definition has been updated accordingly. This removes the plugin's dependency on
+    `knplabs/knp-gaufrette-bundle`, which Sylius core is dropping.
 
-   If you have decorated or otherwise redefined the `sylius_mollie.uploader.payment_method_logo`
-   service and pass it a `Gaufrette\Filesystem` argument, update it to inject
-   `Sylius\Component\Core\Filesystem\Adapter\FilesystemAdapterInterface` instead. Stored logo files
-   are unaffected, as both filesystems resolve to the same directory.
+    If you have decorated or otherwise redefined the `sylius_mollie.uploader.payment_method_logo`
+    service and pass it a `Gaufrette\Filesystem` argument, update it to inject
+    `Sylius\Component\Core\Filesystem\Adapter\FilesystemAdapterInterface` instead. Stored logo files
+    are unaffected, as both filesystems resolve to the same directory.
