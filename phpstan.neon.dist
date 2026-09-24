@@ -1,3 +1,7 @@
+includes:
+    # Temporary: PHPStan 2 findings from the upgrade, meant to shrink over time.
+    - phpstan-baseline.neon
+
 parameters:
     reportUnmatchedIgnoredErrors: false
 
@@ -6,8 +10,7 @@ parameters:
         - src
 
     excludePaths:
-        # Makes PHPStan crash
-        - 'src/DependencyInjection/Configuration.php'
+        # These implement interfaces from the optional sylius/refund-plugin, which is not installed for the analysis
         - 'src/Refund/Validator/*.php'
         - 'src/EventListener/PaymentPartialEventListener.php'
 
