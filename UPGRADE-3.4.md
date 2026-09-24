@@ -258,3 +258,9 @@
 
 16. PHPStan was upgraded to 2.x. `phpstan-baseline.neon` holds the findings the upgrade surfaced and
     is meant to shrink over time.
+
+17. `payum/payum-bundle` is now required explicitly at `^2.7`. The plugin imports the bundle's refund
+    routing in `config/routes/admin.yaml`, and that file is only shipped as YAML from 2.7.0 on - the
+    XML one it used to import was removed there, restored as a deprecated shim in 2.7.1, and cannot
+    be loaded by Symfony 8 at all. Sylius 2.3 already requires `^2.7`; the constraint matters for
+    Sylius 2.2, which still allows `^2.6`.
