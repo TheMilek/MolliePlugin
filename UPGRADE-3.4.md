@@ -208,3 +208,53 @@
     `percentage` already did. `FixedAmountAndPercentageCalculator` needs the limit to cap its total,
     so a method saved without one could not have its fee calculated, which broke the checkout fee
     call for it.
+
+13. The plugin now supports Sylius 2.3 and Symfony 8, and requires Sylius 2.2.9 or newer.
+
+    Symfony 8 removed the XML configuration format, so every service definition shipped by the plugin
+    moved from XML to PHP: `config/services.xml` and `config/services/**/*.xml` became
+    `config/services.php` and `config/services/**/*.php`, and `tests/Behat/Resources/services.xml`
+    became `tests/Behat/Resources/services.php`. Directory layout, file names, service ids, aliases,
+    tags and parameters are unchanged, so nothing has to be adjusted unless your application imports
+    a plugin config file by path, in which case only the extension changes:
+
+    ```diff
+     imports:
+    -    - { resource: "@SyliusMolliePlugin/config/services/resolver.xml" }
+    +    - { resource: "@SyliusMolliePlugin/config/services/resolver.php" }
+    ```
+
+    Doctrine mappings (`config/doctrine/*.orm.xml`) and validator mappings (`config/validation/*.xml`)
+    deliberately stay XML - neither format was removed.
+
+    An application that imports the plugin's Behat services in its own test kernel has to follow the
+    same rename, and, if it also loads Sylius' Behat services, pick the format the installed Sylius
+    ships (2.3 ships PHP, earlier versions ship XML):
+
+    ```php
+    $syliusBehatServices = '../../../vendor/sylius/sylius/src/Sylius/Behat/Resources/config/services';
+    $container->import(is_file(__DIR__ . '/' . $syliusBehatServices . '.php') ? $syliusBehatServices . '.php' : $syliusBehatServices . '.xml');
+    $container->import('@SyliusMolliePlugin/tests/Behat/Resources/services.php');
+    ```
+
+14. Behat is configured in PHP instead of YAML: `behat.yml.dist` became `behat.dist.php`, and
+    `tests/Behat/Resources/suites.yml` together with its five suite files became their `.php`
+    equivalents. The local override file is now `behat.php` rather than `behat.yml`.
+
+    `friends-of-behat/suite-settings-extension` was dropped - it does not work with Behat 4 - and
+    every suite declares its own `->withPaths('features/admin', 'features/shop')`. The unused
+    `admin_order_creation` profile, which pointed at a directory that does not exist, was removed.
+
+    Step definitions in `tests/Behat/Context` use `#[Given]`, `#[When]` and `#[Then]` attributes
+    instead of docblock annotations.
+
+    `dmore/behat-chrome-extension` was replaced by the maintained `sylius-labs/behat-chrome-extension`
+    fork, which keeps the `DMore\ChromeExtension` namespace, and the abandoned `friends-of-behat/mink`
+    by `behat/mink`.
+
+15. The test suite runs on PHPUnit 10.5/11 instead of 9.5. `withConsecutive()` expectations were
+    rewritten with an invocation matcher, data providers are `public static` and are wired with
+    `#[DataProvider]` attributes.
+
+16. PHPStan was upgraded to 2.x. `phpstan-baseline.neon` holds the findings the upgrade surfaced and
+    is meant to shrink over time.
