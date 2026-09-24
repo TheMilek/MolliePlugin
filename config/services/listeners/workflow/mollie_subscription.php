@@ -1,0 +1,30 @@
+<?php
+
+/*
+ * This file is part of the Sylius Mollie Plugin package.
+ *
+ * (c) Sylius Sp. z o.o.
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+declare(strict_types=1);
+
+namespace Symfony\Component\DependencyInjection\Loader\Configurator;
+
+return static function (ContainerConfigurator $container) {
+    $services = $container->services();
+
+    $services->set('sylius_mollie.listener.workflow.mollie_subscription.complete_subscription_guard', \Sylius\MolliePlugin\EventListener\Workflow\MollieSubscription\CompleteSubscriptionGuardListener::class)
+        ->args([service('sylius_mollie.subscription.guard.subscription')])
+        ->tag('kernel.event_listener', ['event' => 'workflow.mollie_subscription_graph.guard.complete', 'priority' => 0]);
+
+    $services->set('sylius_mollie.listener.workflow.mollie_subscription.abort_subscription_guard', \Sylius\MolliePlugin\EventListener\Workflow\MollieSubscription\AbortSubscriptionGuardListener::class)
+        ->args([service('sylius_mollie.subscription.guard.subscription')])
+        ->tag('kernel.event_listener', ['event' => 'workflow.mollie_subscription_graph.guard.abort', 'priority' => 0]);
+
+    $services->set('sylius_mollie.listener.workflow.mollie_subscription.activate_subscription_process', \Sylius\MolliePlugin\EventListener\Workflow\MollieSubscription\ActivateSubscriptionProcessListener::class)
+        ->args([service('sylius_mollie.subscription.processor.subscription_schedule')])
+        ->tag('kernel.event_listener', ['event' => 'workflow.mollie_subscription_graph.completed.activate', 'priority' => 0]);
+};
